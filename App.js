@@ -2,15 +2,20 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+
 const Login = ({ setUser }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
   const handleLogin = async () => {
     try {
-      await axios.post('/register', { email, password });
+      const response = await axios.post(`${API_BASE_URL}/login`, { email, password });
       setUser(email);
+      setError('');
     } catch (error) {
+      setError("Login failed. Check your credentials.");
       console.error("Login failed", error);
     }
   };
@@ -18,6 +23,7 @@ const Login = ({ setUser }) => {
   return (
     <div>
       <h2>Login</h2>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
       <input type="email" placeholder="Email" onChange={(e) => setEmail(e.target.value)} />
       <input type="password" placeholder="Password" onChange={(e) => setPassword(e.target.value)} />
       <button onClick={handleLogin}>Login</button>
@@ -32,11 +38,15 @@ const Dashboard = ({ user }) => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const balanceRes = await axios.get(`/balance/${user}`);
-      setBalance(balanceRes.data.balance);
-      const adsRes = await axios.get('/ads');
-      setAds(adsRes.data);
-      setReferralCode(`${user}-REF${Math.floor(Math.random() * 10000)}`);
+      try {
+        const balanceRes = await axios.get(`${API_BASE_URL}/balance/${user}`);
+        setBalance(balanceRes.data.balance);
+        const adsRes = await axios.get(`${API_BASE_URL}/ads`);
+        setAds(adsRes.data);
+        setReferralCode(`${user}-REF${Math.floor(Math.random() * 10000)}`);
+      } catch (error) {
+        console.error("Error fetching data", error);
+      }
     };
     fetchData();
   }, [user]);
@@ -62,18 +72,23 @@ const AdminPanel = () => {
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const res = await axios.get('/admin/users');
-      setUsers(res.data);
+      try {
+        const res = await axios.get(`${API_BASE_URL}/admin/users`);
+        setUsers(res.data);
+      } catch (error) {
+        console.error("Error fetching users", error);
+      }
     };
     fetchUsers();
   }, []);
 
   const handleWithdraw = async (email) => {
     try {
-      await axios.post('/admin/withdraw', { email });
+      await axios.post(`${API_BASE_URL}/admin/withdraw`, { email });
       alert("Withdrawal successful");
     } catch (error) {
       console.error("Withdrawal failed", error);
+      alert("Withdrawal failed");
     }
   };
 
